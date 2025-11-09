@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Waste2Wealth — Frontend Prototype (Updated)</title>
+  <style>
+    :root{--green:#157249;--muted:#6b7280;--card:#ffffff;--bg:#f6faf6}
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,Arial;margin:0;background:var(--bg);color:#111}
+    header{background:linear-gradient(90deg,var(--green),#0f6a3f);color:#fff;padding:18px 16px;text-align:center}
+    header h1{margin:0;font-size:20px}
+    header p{margin:6px 0 0;font-size:13px;opacity:.95}
+    .wrap{max-width:1100px;margin:18px auto;padding:12px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(15,15,30,0.06)}
+    .small{font-size:13px;color:var(--muted)}
+    label{display:block;font-weight:600;margin:8px 0 6px;font-size:13px}
+    input[type="text"], input[type="email"], input[type="file"], textarea, select{width:100%;padding:9px;border-radius:8px;border:1px solid #e6e9ef;background:#fff}
+    button{background:var(--green);color:#fff;padding:10px 12px;border-radius:8px;border:0;cursor:pointer}
+    button.ghost{background:#fff;color:var(--green);border:1px solid #e6e9ef}
+    .preview{width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid #eee}
+    .list{display:flex;flex-direction:column;gap:10px;max-height:460px;overflow:auto;padding-right:6px}
+    .upload-card{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:10px;border:1px solid #f0f0f0}
+    .upload-card img{width:140px;height:90px;object-fit:cover;border-radius:8px}
+    .meta{flex:1}
+    .meta strong{display:block}
+    .badge{display:inline-block;padding:6px 8px;border-radius:8px;font-weight:700;font-size:12px}
+    .pending{background:#fff7e6;color:#b86b00;border:1px solid #f1d5a3}
+    .collected{background:#e6fff0;color:#0b7a3d;border:1px solid #cbeccf}
+    .leader{list-style:none;padding:0;margin:0}
+    .leader li{display:flex;justify-content:space-between;padding:8px;border-radius:8px;background:#f7fff9;margin-bottom:8px}
+    .highlight{background:#fff9e6;color:#b45309;border-radius:10px;padding:8px;margin-bottom:8px;display:flex;justify-content:space-between}
+    .ngoleader li{background:#f0fff6}
+    footer{text-align:center;padding:14px;color:var(--muted);font-size:13px;margin-top:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>♻ Waste2Wealth — Demo Prototype (Updated)</h1>
+  <p>Duplicate photo **blocked** • NGO leaderboard added • Personalized user rank shown first when logged in.</p>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- Left column: Upload form + Leaderboard -->
+    <div>
+      <div class="card">
+        <h3>Upload Waste (User)</h3>
+        <p class="small">Upload a photo of the plastic/solid waste. Do not enter weight — NGO will confirm it at pickup.</p>
+
+        <form id="uploadForm">
+          <label for="name">Name</label>
+          <input id="name" type="text" placeholder="Your name (e.g., Amit)" required>
+
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="Your email (used as ID)" required>
+
+          <label for="location">Location</label>
+          <input id="location" type="text" placeholder="e.g., Hostel A / Market" required>
+
+          <label for="photo">Photo</label>
+          <input id="photo" type="file" accept="image/*" required>
+
+          <div id="previewWrap" style="display:none">
+            <img id="previewImg" class="preview" alt="preview">
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button type="submit">Submit Upload</button>
+            <button id="clearBtn" type="button" class="ghost">Clear</button>
+          </div>
+
+          <p id="msg" class="small" style="margin-top:8px;color:green"></p>
+        </form>
+      </div>
+
+      <div style="margin-top:12px" class="card">
+        <h3>User Leaderboard</h3>
+        <p class="small">Enter your email to highlight your rank at top.</p>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="loginEmail" type="email" placeholder="Enter your email to view rank">
+          <button id="viewRankBtn" class="ghost">View Rank</button>
+          <button id="logoutBtn" class="ghost">Logout</button>
+        </div>
+
+        <div id="yourRankWrap" style="margin-top:10px"></div>
+        <ol id="leaderboard" class="leader" style="margin-top:8px"></ol>
+        <p class="small" style="margin-top:8px">Top contributors with verified points (confirmed by NGOs).</p>
+      </div>
+    </div>
+
+    <!-- Right column: NGO Dashboard -->
+    <div>
+      <div class="card">
+        <h3>NGO Dashboard (Pending Uploads)</h3>
+        <p class="small">Click "Confirm & Mark Collected" to enter actual weight measured at pickup. Points = weight × 10.</p>
+
+        <div id="ngoList" class="list"></div>
+      </div>
+
+      <div style="margin-top:12px" class="card">
+        <h3>NGO Leaderboard (This Month)</h3>
+        <ol id="ngoLeaderboard" class="leader ngoleader"></ol>
+        <p class="small" style="margin-top:8px">Top NGOs by collected weight this month.</p>
+      </div>
+
+      <div style="margin-top:12px" class="card">
+        <h3>Data Controls</h3>
+        <p class="small">This prototype stores data in your browser's localStorage so you can demo and refresh safely.</p>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="seedBtn" class="ghost">Seed sample data</button>
+          <button id="exportBtn" class="ghost">Export JSON</button>
+          <button id="resetBtn" class="ghost" style="background:#fee2e2;color:#b91c1c">Reset All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Prototype for Hackathon • Points = confirmed weight (kg) × 10 • Data saved locally
+  </footer>
+</div>
+
+<script>
+/*
+  Updated prototype features:
+  - Duplicate photo upload **blocked** (exact match on dataURL)
+  - NGO leaderboard (w2w_ngos_v1) tracks totalCollectedKg per NGO name
+  - User can "login" by email; their rank is shown first and highlighted
+  - LocalStorage keys versioned
+*/
+
+const LS_UPLOADS = 'w2w_uploads_v2';
+const LS_USERS = 'w2w_users_v2';
+const LS_NGOS = 'w2w_ngos_v1';
+const LS_LOGGED = 'w2w_logged_email_v1';
+
+function readUploads(){ return JSON.parse(localStorage.getItem(LS_UPLOADS) || '[]'); }
+function writeUploads(u){ localStorage.setItem(LS_UPLOADS, JSON.stringify(u)); }
+function readUsers(){ return JSON.parse(localStorage.getItem(LS_USERS) || '{}'); }
+function writeUsers(obj){ localStorage.setItem(LS_USERS, JSON.stringify(obj)); }
+function readNGOs(){ return JSON.parse(localStorage.getItem(LS_NGOS) || '{}'); }
+function writeNGOs(obj){ localStorage.setItem(LS_NGOS, JSON.stringify(obj)); }
+function readLogged(){ return localStorage.getItem(LS_LOGGED) || '' }
+function writeLogged(email){ if(email) localStorage.setItem(LS_LOGGED, email); else localStorage.removeItem(LS_LOGGED); }
+
+const uploadForm = document.getElementById('uploadForm');
+const photoInput = document.getElementById('photo');
+const previewWrap = document.getElementById('previewWrap');
+const previewImg = document.getElementById('previewImg');
+const msgP = document.getElementById('msg');
+const ngoList = document.getElementById('ngoList');
+const leaderboardEl = document.getElementById('leaderboard');
+const clearBtn = document.getElementById('clearBtn');
+const viewRankBtn = document.getElementById('viewRankBtn');
+const loginEmail = document.getElementById('loginEmail');
+const yourRankWrap = document.getElementById('yourRankWrap');
+const logoutBtn = document.getElementById('logoutBtn');
+const ngoLeaderboardEl = document.getElementById('ngoLeaderboard');
+
+photoInput.addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if (!file) { previewWrap.style.display='none'; return; }
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    previewImg.src = ev.target.result;
+    previewWrap.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+uploadForm.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  msgP.textContent = '';
+
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const location = document.getElementById('location').value.trim();
+  const file = photoInput.files[0];
+
+  if(!name || !email || !location || !file){ msgP.style.color='red'; msgP.textContent='Please fill all fields and attach a photo.'; return; }
+
+  // read file as dataURL
+  const dataUrl = await fileToDataURL(file);
+
+  // DUPLICATE PREVENTION: exact dataURL match
+  const uploads = readUploads();
+  const duplicate = uploads.find(u=>u.photoDataUrl === dataUrl);
+  if(duplicate){
+    msgP.style.color='red';
+    msgP.textContent = 'Upload Rejected: This exact photo was already uploaded earlier.';
+    return; // block upload
+  }
+
+  // proceed with upload
+  const id = 'U' + Date.now() + '-' + Math.floor(Math.random()*9999);
+  const newUpload = {
+    id, userName: name, userEmail: email, photoDataUrl: dataUrl,
+    location, status: 'Pending', confirmedWeight: 0, points: 0, submittedAt: new Date().toISOString()
+  };
+  uploads.unshift(newUpload);
+  writeUploads(uploads);
+
+  // ensure user exists in users store
+  const users = readUsers();
+  if(!users[email]) users[email] = { name, email, totalPoints: 0 };
+  else users[email].name = name; // update name
+  writeUsers(users);
+
+  // reset form preview
+  uploadForm.reset();
+  previewWrap.style.display='none';
+  msgP.style.color='green';
+  msgP.textContent = 'Uploaded successfully. Pending NGO verification.';
+  renderAll();
+});
+
+clearBtn.addEventListener('click', ()=>{ uploadForm.reset(); previewWrap.style.display='none'; msgP.textContent=''; });
+
+// NGO confirm and mark collected
+async function handleConfirm(id){
+  // ask for NGO name and confirmed weight
+  const ngoName = window.prompt('Enter your NGO name (e.g., GreenEarth):');
+  if(ngoName === null) return; // cancelled
+  const input = window.prompt('Enter confirmed weight in kg (e.g., 3.5). Only NGO should enter this:');
+  if (input === null) return; // cancelled
+  const confirmed = parseFloat(input);
+  if (isNaN(confirmed) || confirmed <= 0){ alert('Please enter a valid positive number'); return; }
+  if (!confirm(`Confirm marking collected with weight ${confirmed} kg by NGO "${ngoName}"?`)) return;
+
+  const uploads = readUploads();
+  const idx = uploads.findIndex(u=>u.id===id);
+  if(idx === -1){ alert('Upload not found'); return; }
+  const w = uploads[idx];
+
+  if(w.status === 'Collected'){ alert('Already collected'); return; }
+
+  const points = Math.round(confirmed * 10);
+
+  // update upload
+  w.confirmedWeight = confirmed;
+  w.points = points;
+  w.status = 'Collected';
+  w.collectedAt = new Date().toISOString();
+  uploads[idx] = w;
+  writeUploads(uploads);
+
+  // credit points to user
+  const users = readUsers();
+  const user = users[w.userEmail] || { name: w.userName, email: w.userEmail, totalPoints: 0 };
+  user.totalPoints = (user.totalPoints || 0) + points;
+  users[w.userEmail] = user;
+  writeUsers(users);
+
+  // credit to NGO totals
+  const ngos = readNGOs();
+  const key = ngoName.trim();
+  if(!key) ngoName = 'Unknown NGO';
+  if(!ngos[key]) ngos[key] = { name: key, totalCollectedKg: 0 };
+  ngos[key].totalCollectedKg = (ngos[key].totalCollectedKg || 0) + confirmed;
+  writeNGOs(ngos);
+
+  renderAll();
+  alert(`Collected. ${points} points credited to ${user.name || user.email} and ${confirmed}kg to NGO: ${key}`);
+}
+
+// render NGO list
+function renderNGO(){
+  const uploads = readUploads();
+  ngoList.innerHTML = '';
+  if(uploads.length === 0){ ngoList.innerHTML = '<p class="small">No uploads yet</p>'; return; }
+  uploads.forEach(u=>{
+    const div = document.createElement('div');
+    div.className = 'upload-card';
+    div.innerHTML = `
+      <img src="${u.photoDataUrl}" alt="waste">
+      <div class="meta">
+        <strong>${escapeHtml(u.userName)}</strong>
+        <div class="small">${escapeHtml(u.userEmail)} • ${escapeHtml(u.location)}</div>
+        <div style="margin-top:6px">
+          ${u.status === 'Pending' ? `<span class="badge pending">Pending</span>` : `<span class="badge collected">Collected</span>`}
+        </div>
+        <div style="margin-top:8px">
+          ${u.status === 'Pending' ? `<button data-id="${u.id}" class="confirmBtn">Confirm & Mark Collected</button>` : `<div class="small">Confirmed: ${u.confirmedWeight} kg • Points: ${u.points}</div>`}
+        </div>
+        <div class="small" style="margin-top:6px">Uploaded: ${new Date(u.submittedAt).toLocaleString()}</div>
+      </div>
+    `;
+    ngoList.appendChild(div);
+  });
+
+  // attach handlers
+  document.querySelectorAll('.confirmBtn').forEach(btn=>{ btn.addEventListener('click', ()=> handleConfirm(btn.dataset.id)); });
+}
+
+// render leaderboard with personalized rank
+function renderLeaderboard(){
+  const users = Object.values(readUsers());
+  users.sort((a,b)=> (b.totalPoints||0) - (a.totalPoints||0));
+  leaderboardEl.innerHTML = '';
+
+  if(users.length === 0){ leaderboardEl.innerHTML = '<li class="small">No contributors yet</li>'; return; }
+
+  const logged = readLogged();
+  let userIndex = -1;
+  if(logged){ userIndex = users.findIndex(u=>u.email === logged); }
+
+  // if logged in and user exists, show their rank at top highlighted
+  if(userIndex !== -1){
+    const u = users[userIndex];
+    const rank = userIndex + 1;
+    yourRankWrap.innerHTML = `<div class="highlight"> <div>⭐ Your Rank: #${rank} — ${escapeHtml(u.name||u.email)}</div> <div><strong>${u.totalPoints||0} pts</strong></div></div>`;
+  } else {
+    yourRankWrap.innerHTML = '';
+  }
+
+  users.forEach((u, i)=>{
+    const li = document.createElement('li');
+    // if logged in and this is the logged user, still include them in list (but will appear in position too)
+    li.innerHTML = `<span>#${i+1} ${escapeHtml(u.name || u.email)}</span><strong>${u.totalPoints||0} pts</strong>`;
+    leaderboardEl.appendChild(li);
+  });
+}
+
+// render NGO leaderboard
+function renderNGOLeaderboard(){
+  const ngos = Object.values(readNGOs());
+  ngos.sort((a,b)=> (b.totalCollectedKg||0) - (a.totalCollectedKg||0));
+  ngoLeaderboardEl.innerHTML = '';
+  if(ngos.length === 0){ ngoLeaderboardEl.innerHTML = '<li class="small">No NGOs yet</li>'; return; }
+  ngos.forEach((n, i)=>{
+    const li = document.createElement('li');
+    li.innerHTML = `<span>#${i+1} ${escapeHtml(n.name)}</span><strong>${(n.totalCollectedKg||0).toFixed(2)} kg</strong>`;
+    ngoLeaderboardEl.appendChild(li);
+  });
+}
+
+// helpers
+function renderAll(){ renderNGO(); renderLeaderboard(); renderNGOLeaderboard(); }
+function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(file); }); }
+function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+// Data controls
+document.getElementById('seedBtn').addEventListener('click', ()=>{
+  if(!confirm('Seed some sample uploads, users and NGOs?')) return;
+  const sampleUsers = {
+    'prince@example.com': {name:'Prince', email:'prince@example.com', totalPoints:120},
+    'riya@example.com': {name:'Riya', email:'riya@example.com', totalPoints:95},
+    'aman@example.com': {name:'Aman', email:'aman@example.com', totalPoints:80}
+  };
+  const sampleUploads = [
+    { id:'U1', userName:'Prince', userEmail:'prince@example.com', photoDataUrl:'https://via.placeholder.com/400x300.png?text=Plastic+1', location:'Hostel A', status:'Collected', confirmedWeight:12, points:120, submittedAt:new Date().toISOString()},
+    { id:'U2', userName:'Riya', userEmail:'riya@example.com', photoDataUrl:'https://via.placeholder.com/400x300.png?text=Plastic+2', location:'Market', status:'Collected', confirmedWeight:9.5, points:95, submittedAt:new Date().toISOString()},
+    { id:'U3', userName:'Aman', userEmail:'aman@example.com', photoDataUrl:'https://via.placeholder.com/400x300.png?text=Plastic+3', location:'College Gate', status:'Collected', confirmedWeight:8, points:80, submittedAt:new Date().toISOString()}
+  ];
+  const sampleNGOs = {
+    'GreenEarth': {name:'GreenEarth', totalCollectedKg:120},
+    'CleanCity': {name:'CleanCity', totalCollectedKg:95}
+  };
+  writeUsers(sampleUsers);
+  writeUploads(sampleUploads);
+  writeNGOs(sampleNGOs);
+  renderAll();
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(!confirm('Reset ALL data in this browser?')) return;
+  localStorage.removeItem(LS_UPLOADS);
+  localStorage.removeItem(LS_USERS);
+  localStorage.removeItem(LS_NGOS);
+  localStorage.removeItem(LS_LOGGED);
+  renderAll();
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const data = { uploads: readUploads(), users: readUsers(), ngos: readNGOs() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'w2w_export_v2.json'; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+viewRankBtn.addEventListener('click', ()=>{
+  const email = (loginEmail.value||'').trim().toLowerCase();
+  if(!email){ alert('Enter a valid email'); return; }
+  writeLogged(email);
+  renderAll();
+});
+
+logoutBtn.addEventListener('click', ()=>{ writeLogged(''); loginEmail.value=''; renderAll(); });
+
+// initial render
+renderAll();
+
+</script>
+</body>
+</html>
